@@ -1,0 +1,53 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script type="text/javascript">
+
+  let socket = new WebSocket("ws://localhost:3000/cable");
+
+  socket.onopen = function(e) {
+    console.log("[open] Connection established:");
+    socket.send(JSON.stringify({
+      command: 'subscribe',
+      identifier: JSON.stringify(({channel: 'WatcherChannel', visitor: <%= @visitor %>}))}))
+
+  };
+
+  socket.onmessage = function(event) {
+    $(document).ready(function(){
+      data = JSON.parse(event.data);
+      console.log(data);
+      if(data.type == "ping"){
+        console.log("ping");
+      }else{
+
+        if(data.message != undefined && data.message.message != undefined){
+          if(data.message.visitor == <%= @visitor %>){
+            message = data.message.message;
+            $("#logs").append("<p>"+message+"</p>")
+          }
+        }
+      }
+    })
+  };
+
+  socket.onclose = function(event) {
+    if (event.wasClean) {
+      console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+    } else {
+      console.log('[close] Connection died');
+    }
+  };
+
+  socket.onerror = function(error) {
+    console.log(`[error] ${error.message}`);
+  };
+</script>
+
+<body>
+  <h3>Live Logs</h3>
+  <div id="logs">
+    <% @lines.each do |line| %>
+    <p><%= line %></p>
+    <% end %>
+  </div>
+</body>
